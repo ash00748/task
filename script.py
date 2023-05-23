@@ -29,7 +29,7 @@ def excel_to_xml(file):
             entry.text = str(data)
 
     ET.indent(tree, space="\t", level=0)
-    tree.write("test2.xml", encoding="UTF-8", xml_declaration=True)
+    tree.write("test.xml", encoding="UTF-8", xml_declaration=True)
 
 if __name__ == '__main__':
     file_name=sys.argv[1]
