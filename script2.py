@@ -56,7 +56,9 @@ def excel_to_xml(file: str, output_file: str):
     filename.text = str(head.at["FileName", "CERTDATA"])
 
     envelope = ET.SubElement(root, "ENVELOPE")  # задаем элемент envelope
-
+    
+    # словарь с курсом доллара
+    dollar_values = {} 
     for row in df.index:  # для каждой строки данных задаем элемент ecert
         ecert = ET.SubElement(envelope, "ECERT")
         for column in df.columns:  # для каждого поля данных создаем соотвествующий элемент
@@ -77,13 +79,18 @@ def excel_to_xml(file: str, output_file: str):
         date = f'{date.day:02}/{date.month:02}/{date.year}'
         svalue = df.at[row, 'SVALUE']
 
-        url = f"http://www.cbr.ru/scripts/XML_daily.asp?date_req={date}"
-        xml_cbr = pd.read_xml(url, encoding='cp1251')
+        # если курс для этой даты ещё не загружали
+        if date not in dollar_values.keys(): 
+            url = f"http://www.cbr.ru/scripts/XML_daily.asp?date_req={date}"
+            xml_cbr = pd.read_xml(url, encoding='cp1251')
 
-        # индекс строки, соответствующей нужной валюте
-        index_usa = ((xml_cbr.index[xml_cbr['ID'] == code_usa]).to_list())[0]  
-        # курс нужной валюты лежит в формате str 123,123
-        value_usa = float((xml_cbr.at[index_usa, 'Value']).replace(',', '.'))
+            # индекс строки, соответствующей нужной валюте
+            index_usa = ((xml_cbr.index[xml_cbr['ID'] == code_usa]).to_list())[0]  
+            # курс нужной валюты лежит в формате str 123,123
+            value_usa = float((xml_cbr.at[index_usa, 'Value']).replace(',', '.'))
+            dollar_values[date] = value_usa
+        else: # если курс для даты уже загружен
+            value_usa = dollar_values[date]
         # вычисляем значение атрибута SVALUEUSD и округляем согласно требованиям
         svalueus = round(svalue/value_usa, 2)
         # добавляем новый атрибут в xml дерево
